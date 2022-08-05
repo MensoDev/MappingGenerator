@@ -7,8 +7,6 @@ namespace MappingGenerator.Finders;
 
 internal class MapFromFinder : ISyntaxReceiver
 {
-    private const string MapFromAttributeName = "MapFrom";
-
     public MapFromFinder()
     {
         ClassDeclarations = new List<ClassDeclarationSyntax>();

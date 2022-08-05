@@ -18,8 +18,8 @@ internal class MapFromAttributeHelper
     {
         return classDeclaration
             .AttributeLists
-            .Where(attrList => attrList.ToFullString().StartsWith("MapFrom"))
             .SelectMany(attrList => attrList.Attributes)
+            .Where(attr => attr.ToFullString().Contains("MapFrom"))
             .OfType<AttributeSyntax>();
     }
 

@@ -1,4 +1,6 @@
-﻿using MappingGenerator.Extensions;
+﻿using System;
+using System.Diagnostics;
+using MappingGenerator.Extensions;
 using MappingGenerator.Finders;
 using MappingGenerator.Helpers;
 using MappingGenerator.Models;
@@ -6,16 +8,38 @@ using MappingGenerator.Services;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
-using System.Linq;
+using System.Collections.Generic;
 
 namespace MappingGenerator;
 
 [Generator]
-internal class MappingSourceGenerators : ISourceGenerator
+public class MappingSourceGenerators : ISourceGenerator
 {
     public void Execute(GeneratorExecutionContext context)
     {
-        throw new System.NotImplementedException();
+        try
+        {
+//#if DEBUG
+//            if (!Debugger.IsAttached)
+//            {
+//                Debugger.Launch();
+//            }
+//#endif
+
+            //CreateMappersAttributesInContext(context);
+
+            if (context.SyntaxReceiver is not MapFromFinder mapFromFinder) return;
+
+            CreateMappersInContext(context, mapFromFinder.ClassDeclarations);
+            
+        }
+        catch (Exception e)
+        {
+            //#if DEBUG
+            //            Debugger.Log(0, "MappingSourceGenerators", e.Message);
+            //#endif
+            throw e;
+        }
     }
 
     public void Initialize(GeneratorInitializationContext context)
@@ -23,24 +47,40 @@ internal class MappingSourceGenerators : ISourceGenerator
         context.RegisterForSyntaxNotifications(() => new MapFromFinder());
     }
 
+    private static void CreateMappersAttributesInContext(GeneratorExecutionContext context)
+    {
+        context.AddSource("MapFromAttribute.g.cs", MapFromAttributeTemplate.CreateMapFromAttribute());
+    }
+
+    private static void CreateMappersInContext(GeneratorExecutionContext context, List<ClassDeclarationSyntax> modelClassDeclarations)
+    {
+        foreach (var modelClassDeclarationSyntax in modelClassDeclarations)
+        {
+            (ClassDeclaration model, ClassDeclaration entity) = CreateTypes(context.Compilation, modelClassDeclarationSyntax);
+            var propertyMappingArguments = CreateMappingArguments(model, entity);
+            var sourceMapperCode = MappingTemplate.CreateMapper(model, entity, propertyMappingArguments);
+            context.AddSource($"{model.Name}Mapper.g.cs", sourceMapperCode);
+        }
+    }
+
     private static (ClassDeclaration model, ClassDeclaration entity) CreateTypes(Compilation compilation, ClassDeclarationSyntax modelClassDeclaration)
     {
-        SemanticModel semanticModel = compilation.GetSemanticModel(modelClassDeclaration.SyntaxTree);
-        AttributeSyntax fromMapAttributeSyntax = MapFromAttributeHelper.GetMapFromAttribute(modelClassDeclaration);
-        IdentifierNameSyntax entityNameSyntax = MapFromAttributeHelper.GetEntityIdentifierNameSyntax(fromMapAttributeSyntax);
-        ClassDeclarationSyntax entityClassDeclaration = semanticModel.GetEntityClassDeclaration(entityNameSyntax);
+        var semanticModel = compilation.GetSemanticModel(modelClassDeclaration.SyntaxTree);
+        var fromMapAttributeSyntax = MapFromAttributeHelper.GetMapFromAttribute(modelClassDeclaration);
+        var entityNameSyntax = MapFromAttributeHelper.GetEntityIdentifierNameSyntax(fromMapAttributeSyntax);
+        var entityClassDeclaration = semanticModel.GetEntityClassDeclaration(entityNameSyntax);
 
-        ClassDeclaration model = ClassDeclarationFactory.Create(modelClassDeclaration);
-        ClassDeclaration entity = ClassDeclarationFactory.Create(entityClassDeclaration);
+        var model = ClassDeclarationFactory.Create(modelClassDeclaration);
+        var entity = ClassDeclarationFactory.Create(entityClassDeclaration);
         return (model, entity);
     }
 
-    private static void CreateMappingArguments(ClassDeclaration model, ClassDeclaration entity)
+    private static StringBuilder CreateMappingArguments(ClassDeclaration model, ClassDeclaration entity)
     {
-        StringBuilder builder = new StringBuilder();
+        var builder = new StringBuilder();
         foreach (var modelProperty in model.Properties)
         {
-            PropertyDeclaration? entityProperty = entity.FindEquivalentProperty(modelProperty);
+            var entityProperty = entity.FindEquivalentProperty(modelProperty);
             if (entityProperty is null) continue;
 
             var useCase = PropertyUseCaseFactory.CreatePropertyUseCase(modelProperty, entityProperty);
@@ -48,5 +88,7 @@ internal class MappingSourceGenerators : ISourceGenerator
 
             builder.Append($"{useCase.CreateUseCaseTo(entity)}, ");
         }
+
+        return builder;
     }
 }

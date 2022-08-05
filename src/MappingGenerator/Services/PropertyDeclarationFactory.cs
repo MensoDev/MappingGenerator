@@ -32,7 +32,7 @@ internal sealed class PropertyDeclarationFactory
 
     private static PropertyBaseType IdentifyPropertyBaseType(PropertyDeclarationSyntax propertySyntax)
     {
-        return propertySyntax.Type.ToFullString() switch
+        return propertySyntax.Type.ToFullString().Trim() switch
         {
             "string" or "String" => PropertyBaseType.String,
             "short" or "Int16" => PropertyBaseType.Short,
