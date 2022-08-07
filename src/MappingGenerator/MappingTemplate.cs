@@ -8,8 +8,9 @@ internal class MappingTemplate
     public static string CreateMapper(ClassDeclaration model, ClassDeclaration entity, StringBuilder propertyMappingArguments)
     {
         return $@"using System.Linq.Expressions;
+using {entity.SelfNamespace};
 
-namespace MappingGenerator.Application;
+namespace {model.SelfNamespace};
 
 public static class {model.Name}Mapper
 {{    

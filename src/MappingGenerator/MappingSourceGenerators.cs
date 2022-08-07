@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using MappingGenerator.Extensions;
 using MappingGenerator.Finders;
 using MappingGenerator.Helpers;

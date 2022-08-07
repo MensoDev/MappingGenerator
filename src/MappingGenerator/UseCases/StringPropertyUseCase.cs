@@ -2,11 +2,11 @@
 
 namespace MappingGenerator.UseCases;
 
-internal sealed class PrimitivePropertyUseCase : IPropertyUseCase
+internal sealed class StringPropertyUseCase : IPropertyUseCase
 {
-    private const string NullableMemberAccessToken = ".GetValueOrDefault()";
+    private const string NullableSuppressorToken = "!";
 
-    public PrimitivePropertyUseCase(
+    public StringPropertyUseCase(
         PropertyDeclaration modelProperty,
         PropertyDeclaration entityProperty)
     {
@@ -31,6 +31,6 @@ internal sealed class PrimitivePropertyUseCase : IPropertyUseCase
 
     private string ValidateNullableToken()
     {
-        return EntityProperty.HasNullable && !ModelProperty.HasNullable ? NullableMemberAccessToken : string.Empty;
+        return EntityProperty.HasNullable && !ModelProperty.HasNullable ? NullableSuppressorToken : string.Empty;
     }
 }

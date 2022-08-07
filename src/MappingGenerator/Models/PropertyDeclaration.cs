@@ -5,14 +5,17 @@ namespace MappingGenerator.Models;
 
 internal sealed class PropertyDeclaration
 {
-    public PropertyDeclaration(string name, PropertyBaseType baseType, PropertyModifierType modifierType)
+    public PropertyDeclaration(string name, PropertyBaseType baseType, PropertyModifierType modifierType, bool hasNullable = false)
     {
         Name = name;
         BaseType = baseType;
         ModifierType = modifierType;
+        HasNullable = hasNullable;
+        HasNullable = hasNullable;
     }
 
     public string Name { get; private set; }
+    public bool HasNullable { get; private set; }
     public PropertyBaseType BaseType { get; private set; }
     public PropertyModifierType ModifierType { get; private set; }
 

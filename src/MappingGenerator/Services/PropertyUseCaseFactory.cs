@@ -12,10 +12,14 @@ internal sealed class PropertyUseCaseFactory
     {
         return modelProperty.BaseType switch
         {
-            PropertyBaseType.String or
+            PropertyBaseType.String => new StringPropertyUseCase(modelProperty, entityProperty),
+
             PropertyBaseType.Short or
             PropertyBaseType.Int or
-            PropertyBaseType.Long
+            PropertyBaseType.Long or
+            PropertyBaseType.Float or
+            PropertyBaseType.Double or
+            PropertyBaseType.Decimal
                 => new PrimitivePropertyUseCase(modelProperty, entityProperty),
 
             _ => null
