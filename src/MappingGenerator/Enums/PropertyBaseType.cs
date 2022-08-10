@@ -12,5 +12,7 @@ internal enum PropertyBaseType
     Double = 7,
     Decimal = 8,
 
+    List = 50,
+
     Object = 55
 }

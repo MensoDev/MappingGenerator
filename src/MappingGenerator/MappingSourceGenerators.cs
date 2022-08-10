@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace MappingGenerator;
 
@@ -18,6 +19,9 @@ public class MappingSourceGenerators : ISourceGenerator
     {
         try
         {
+            // Setup
+            CodeContextHelper.Configure(context);
+
 //#if DEBUG
 //            if (!Debugger.IsAttached)
 //            {
@@ -29,7 +33,7 @@ public class MappingSourceGenerators : ISourceGenerator
 
             if (context.SyntaxReceiver is not MapFromFinder mapFromFinder) return;
 
-            CreateMappersInContext(context, mapFromFinder.ClassDeclarations);
+            CreateMappersInContext(mapFromFinder.ClassDeclarations);
             
         }
         catch (Exception e)
@@ -51,26 +55,32 @@ public class MappingSourceGenerators : ISourceGenerator
         context.AddSource("MapFromAttribute.g.cs", MapFromAttributeTemplate.CreateMapFromAttribute());
     }
 
-    private static void CreateMappersInContext(GeneratorExecutionContext context, List<ClassDeclarationSyntax> modelClassDeclarations)
+    private static void CreateMappersInContext(List<ClassDeclarationSyntax> modelClassDeclarations)
     {
         foreach (var modelClassDeclarationSyntax in modelClassDeclarations)
         {
-            (ClassDeclaration model, ClassDeclaration entity) = CreateTypes(context.Compilation, modelClassDeclarationSyntax);
+            var (model, entity) = CreateTypes(modelClassDeclarationSyntax);
+
             var propertyMappingArguments = CreateMappingArguments(model, entity);
+
             var sourceMapperCode = MappingTemplate.CreateMapper(model, entity, propertyMappingArguments);
-            context.AddSource($"{model.Name}Mapper.g.cs", sourceMapperCode);
+            var sourceMapperAttributeCode = MappingTemplate.CreateUseMapper(model, entity);
+
+            CodeContextHelper.Instance().RegisterCode($"{model.Name}Mapper.g.cs", sourceMapperCode);
+            CodeContextHelper.Instance().RegisterCode($"Use{model.Name}MapperAttribute.g.cs", sourceMapperAttributeCode);
         }
     }
 
-    private static (ClassDeclaration model, ClassDeclaration entity) CreateTypes(Compilation compilation, ClassDeclarationSyntax modelClassDeclaration)
+    private static (ClassDeclaration model, ClassDeclaration entity) CreateTypes(ClassDeclarationSyntax modelClassDeclaration)
     {
-        var semanticModel = compilation.GetSemanticModel(modelClassDeclaration.SyntaxTree);
+        var semanticModel = CodeContextHelper.Instance().Compilation.GetSemanticModel(modelClassDeclaration.SyntaxTree);
         var fromMapAttributeSyntax = MapFromAttributeHelper.GetMapFromAttribute(modelClassDeclaration);
         var entityNameSyntax = MapFromAttributeHelper.GetEntityIdentifierNameSyntax(fromMapAttributeSyntax);
         var entityClassDeclaration = semanticModel.GetEntityClassDeclaration(entityNameSyntax);
 
         var model = ClassDeclarationFactory.Create(modelClassDeclaration);
         var entity = ClassDeclarationFactory.Create(entityClassDeclaration);
+
         return (model, entity);
     }
 

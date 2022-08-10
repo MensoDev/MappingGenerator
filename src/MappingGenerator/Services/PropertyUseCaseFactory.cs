@@ -21,8 +21,17 @@ internal sealed class PropertyUseCaseFactory
             PropertyBaseType.Double or
             PropertyBaseType.Decimal
                 => new PrimitivePropertyUseCase(modelProperty, entityProperty),
+            
+            PropertyBaseType.List => new ListPropertyUseCase(modelProperty, entityProperty),
+
+            PropertyBaseType.Object => CreateObjectPropertyUseCase(modelProperty, entityProperty),
 
             _ => null
         };
+    }
+
+    private static IPropertyUseCase? CreateObjectPropertyUseCase(PropertyDeclaration modelProperty, PropertyDeclaration entityProperty)
+    {
+        return modelProperty.UseMapper ? new ObjectPropertyCaseUse(modelProperty, entityProperty) : null;
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System;
+using System.Text;
 using MappingGenerator.Models;
 
 namespace MappingGenerator;
@@ -24,5 +25,18 @@ public static class {model.Name}Mapper
         return MapFrom{entity.Name}.Compile().Invoke({entity.CamelCaseName});
     }}
 }}";
+    }
+
+    public static string CreateUseMapper(ClassDeclaration model, ClassDeclaration entity)
+    {
+        return $$"""
+        using System;
+
+        namespace {{model.SelfNamespace}};
+
+        [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
+        public class Use{{model.Name}}MapperAttribute : Attribute { }
+
+        """;
     }
 }

@@ -11,5 +11,5 @@ internal static class SemanticModelExtension
         var result = semanticModel.GetTypeInfo(entityIdentifierName);
         if (result.Type is null) throw new InvalidOperationException();
         return (ClassDeclarationSyntax)result.Type.DeclaringSyntaxReferences[0].GetSyntax();
-    }
+    }    
 }

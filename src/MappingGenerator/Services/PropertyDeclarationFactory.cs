@@ -1,6 +1,8 @@
 ﻿using MappingGenerator.Enums;
 using MappingGenerator.Models;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Linq;
 
 namespace MappingGenerator.Services;
 
@@ -8,12 +10,15 @@ internal sealed class PropertyDeclarationFactory
 {
     public static PropertyDeclaration Create(PropertyDeclarationSyntax propertySyntax)
     {
-        string propertyName = IdentifyPropertyName(propertySyntax);
-        PropertyModifierType modifierType = IdentifyPropertyModifier(propertySyntax);
-        PropertyBaseType baseType = IdentifyPropertyBaseType(propertySyntax);
-        bool hasNullabe = IdentifyIfPropertyIsNullable(propertySyntax);
+        var mapperName = IdentifyUseMapperAttribute(propertySyntax);
+        var mapper = mapperName is null ? null : new MapperDeclaration(mapperName);
 
-        return new PropertyDeclaration(propertyName, baseType, modifierType, hasNullabe);
+        var propertyName = IdentifyPropertyName(propertySyntax);
+        var modifierType = IdentifyPropertyModifier(propertySyntax);
+        var baseType = IdentifyPropertyBaseType(propertySyntax);
+        var hasNullable = IdentifyIfPropertyIsNullable(propertySyntax);
+
+        return new PropertyDeclaration(propertyName, baseType, modifierType, hasNullable, mapper);
     }
 
     private static string IdentifyPropertyName(PropertyDeclarationSyntax propertySyntax)
@@ -43,6 +48,8 @@ internal sealed class PropertyDeclarationFactory
             "double" or "Double" => PropertyBaseType.Double,
             "float" or "Float" => PropertyBaseType.Float,
 
+            var type when  type.StartsWith("IList") || type.StartsWith("List")  => PropertyBaseType.List,
+
             _ => PropertyBaseType.Object
         };
     }
@@ -50,5 +57,20 @@ internal sealed class PropertyDeclarationFactory
     private static bool IdentifyIfPropertyIsNullable(PropertyDeclarationSyntax propertySyntax)
     {
         return propertySyntax.Type is NullableTypeSyntax;
+    }
+
+    private static string? IdentifyUseMapperAttribute(PropertyDeclarationSyntax propertySyntax)
+    {
+        return propertySyntax
+            .DescendantNodes()
+            .OfType<IdentifierNameSyntax>()
+            .Where(nameSyntax =>
+            {
+                var name = nameSyntax.ToFullString();
+                return name.StartsWith("Use") && name.EndsWith("Mapper");
+            })
+            .Select(name => name.ToFullString().Remove(0,3))
+            .FirstOrDefault();
+
     }
 }
